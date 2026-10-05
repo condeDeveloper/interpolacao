@@ -1,0 +1,49 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ${{ matrix.so }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # O polinomio interpolador e UNICO: dados n+1 pontos com abscissas
+      # diferentes, existe um unico polinomio de grau no maximo n que passa por
+      # todos. As formas de Lagrange e de Newton sao duas maneiras de escrever o
+      # MESMO polinomio, e os coeficientes aqui sao racionais de inteiro grande
+      # justamente para exigir igualdade em vez de semelhanca.
+      #
+      # E o erro e amostrado no intervalo INTEIRO, nunca so nos nos. Nos nos a
+      # interpolacao acerta por construcao, e um erro medido so ali daria zero
+      # para qualquer metodo, inclusive para um quebrado.
+      - name: testes
+        run: dotnet test testes/Interpolacao.Testes/Interpolacao.Testes.csproj -c Release --nologo -v q
+
+      - name: o fenomeno de Runge
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- runge
+
+      - name: a constante de Lebesgue
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- lebesgue
+
+      - name: o mesmo metodo em funcoes diferentes
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- funcoes
+
+      - name: Lagrange e Newton, o mesmo polinomio por dois caminhos
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- formas
+
+      - name: a spline cubica natural
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- spline
